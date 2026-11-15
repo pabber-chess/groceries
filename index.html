@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Groceries</title>
+<meta name="theme-color" content="#2f7d4f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Groceries">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#f5f4ef;--card:#fff;--ink:#1d1d1b;--muted:#7a776f;--line:#e7e4dc;--acc:#2f7d4f;--acc-ink:#fff;--acc-soft:#e3f1e8;--danger:#c0392b;--done:#a29f97;--shadow:0 1px 2px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.04)}
+@media (prefers-color-scheme:dark){:root{--bg:#141513;--card:#1f201e;--ink:#ecebe6;--muted:#9a978f;--line:#2e2f2c;--acc:#4caf74;--acc-ink:#0d1a12;--acc-soft:#1e3326;--danger:#e2695c;--done:#6f6d68;--shadow:none}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+body{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
+button{font:inherit;color:inherit;cursor:pointer}
+input{font:inherit;font-size:16px}
+[hidden]{display:none!important}
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(8px + env(safe-area-inset-top)) 14px 12px;border-bottom:1px solid var(--line)}
+.title-row{display:flex;align-items:center;justify-content:space-between}
+h1{font-size:26px;margin:0;letter-spacing:-.02em}
+.icon-btn{background:none;border:0;font-size:22px;color:var(--muted);padding:6px 8px;line-height:1}
+.status{background:none;border:0;padding:0;margin:0 0 10px;color:var(--muted);font-size:13px;text-align:left}
+.status.err{color:var(--danger)}
+form{position:relative}
+.add-row{display:flex;gap:8px}
+.add-row input{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:12px;min-width:0;outline:none}
+.add-row input:focus{border-color:var(--acc)}
+#addName{flex:1}
+.qty-in{width:96px;flex:none}
+.add-btn{width:48px;flex:none;border:0;border-radius:12px;background:var(--acc);color:var(--acc-ink);font-size:28px;line-height:1}
+.suggest{position:absolute;left:0;right:0;top:100%;margin-top:6px;background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.15);overflow:hidden;z-index:6}
+.suggest button{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;border:0;border-top:1px solid var(--line);background:none;text-align:left}
+.suggest button:first-child{border-top:0}
+.suggest .tag{margin-left:auto;color:var(--muted);font-size:13px}
+main{padding:2px 14px}
+.cat{margin-top:18px}
+.cat h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:0 6px 7px;display:flex;align-items:center;gap:8px;font-weight:650}
+.cat h2 .ic{font-size:17px;letter-spacing:0}
+.cnt{margin-left:auto;font-weight:500}
+ul{list-style:none;margin:0;padding:0;background:var(--card);border-radius:14px;box-shadow:var(--shadow);overflow:hidden}
+.item{position:relative;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;outline:none}
+.item+.item{border-top:1px solid var(--line)}
+.row{position:relative;z-index:1;background:var(--card);display:flex;align-items:baseline;gap:10px;padding:14px 16px;min-height:50px;transition:transform .2s ease}
+.item.swiping .row{transition:none}
+.swipe-bg{position:absolute;inset:0;background:var(--acc-soft);color:var(--acc);display:flex;align-items:center;padding-left:18px;font-weight:650;font-size:15px}
+.item.armed .swipe-bg{background:var(--acc);color:var(--acc-ink)}
+.nm{flex:1;overflow-wrap:anywhere}
+.qty{color:var(--muted);font-size:14px;white-space:nowrap}
+.done .nm,.done .qty{text-decoration:line-through;color:var(--done)}
+.item:focus-visible .row{box-shadow:inset 0 0 0 2px var(--acc)}
+.flash .row{animation:flash 1.3s ease}
+@keyframes flash{0%,45%{background:var(--acc-soft)}100%{background:var(--card)}}
+.done-sec h2{margin-top:6px}
+.btn{border:1px solid var(--line);background:var(--card);border-radius:12px;padding:11px 16px;font-size:15px;font-weight:600}
+.btn.primary{background:var(--acc);border-color:var(--acc);color:var(--acc-ink)}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn.ghost{background:none;border-color:transparent}
+.danger-t{color:var(--danger)}
+.btn.wide{display:block;width:100%;margin-top:12px}
+.btn:disabled{opacity:.5}
+.empty{text-align:center;color:var(--muted);padding:56px 24px 0}
+.empty b{display:block;font-size:40px;margin-bottom:8px}
+.hint{color:var(--muted);font-size:13px;text-align:center;margin:22px 0 0}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom));background:#2a2a28;color:#fff;border-radius:12px;padding:8px 8px 8px 16px;display:flex;align-items:center;gap:10px;z-index:40;width:max-content;max-width:calc(100% - 28px);box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:15px;min-height:44px}
+.toast span{padding:4px 0}
+.toast button{background:none;border:0;color:#8fe0ad;font-weight:700;font-size:15px;padding:8px 10px;white-space:nowrap}
+.sheet-wrap{position:fixed;inset:0;z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.dlg-wrap{z-index:30;align-items:center}
+.backdrop{position:absolute;inset:0;background:rgba(0,0,0,.38)}
+.sheet{position:relative;background:var(--bg);width:100%;max-width:560px;max-height:92vh;overflow:auto;-webkit-overflow-scrolling:touch;border-radius:18px 18px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom));animation:up .2s ease-out}
+.dlg{border-radius:16px;margin:20px;max-width:380px;padding:20px;animation:none}
+@keyframes up{from{transform:translateY(40px);opacity:.4}to{transform:none;opacity:1}}
+.sheet-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sheet h3{margin:0;font-size:19px}
+.field{display:block;margin:10px 0}
+.field>span{display:block;font-size:13px;color:var(--muted);margin:0 0 5px 2px}
+.field input,.newcat input,.hrow input{width:100%;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:11px 12px;outline:none}
+.field input:focus,.newcat input:focus,.hrow input:focus{border-color:var(--acc)}
+.two{display:flex;gap:10px}.two .grow{flex:1;min-width:0}.two .qtyf{width:110px;flex:none}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--card);border-radius:999px;padding:9px 13px;font-size:15px}
+.chip.on{background:var(--acc);color:var(--acc-ink);border-color:var(--acc)}
+.chip.add{border-style:dashed;color:var(--muted)}
+.newcat{display:flex;gap:8px;margin-top:10px}
+.btnrow{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.btnrow.spread{justify-content:space-between}
+.card{background:var(--card);border-radius:14px;padding:14px;margin-top:12px;box-shadow:var(--shadow)}
+.sec-h{font-weight:700;font-size:15px;margin-bottom:6px}
+.sub-h{font-weight:650;font-size:14px;margin-top:16px}
+details summary{cursor:pointer}
+.small{font-size:14px;margin:6px 0}
+.muted{color:var(--muted)}
+.steps{padding-left:20px;margin:6px 0 4px}
+.steps li{margin:3px 0}
+a{color:var(--acc)}
+.or{text-align:center;color:var(--muted);font-size:13px;margin:14px 0 2px}
+.hrow{display:flex;gap:6px;align-items:center;margin-top:8px}
+.hrow .hicon{width:46px;flex:none;text-align:center;padding:10px 4px}
+.hrow .hname{flex:1;min-width:0}
+.mini{border:1px solid var(--line);background:var(--bg);border-radius:9px;width:38px;height:42px;flex:none;font-size:16px;padding:0}
+.mini-sp{width:38px;flex:none}
+.lrow{display:flex;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:15px}
+.lrow span:first-child{flex:1}
+.dlg p{margin:0 0 6px;font-size:16px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="title-row">
+    <h1>Groceries</h1>
+    <button id="gear" class="icon-btn" aria-label="Settings">⚙︎</button>
+  </div>
+  <button id="status" class="status" type="button"></button>
+  <form id="addForm" autocomplete="off">
+    <div class="add-row">
+      <input id="addName" placeholder="Add item…" enterkeyhint="done" autocapitalize="sentences" autocorrect="off" spellcheck="false" aria-label="Item">
+      <input id="addQty" class="qty-in" placeholder="Amount" enterkeyhint="done" autocorrect="off" aria-label="Amount (optional)">
+      <button class="add-btn" aria-label="Add">+</button>
+    </div>
+    <div id="suggest" class="suggest" hidden></div>
+  </form>
+</header>
+<main id="list"></main>
+<div id="toast" class="toast" hidden role="status"></div>
+<div id="sheetWrap" class="sheet-wrap" hidden><div class="backdrop"></div><div id="sheet" class="sheet" role="dialog" aria-modal="true"></div></div>
+<div id="dlgWrap" class="sheet-wrap dlg-wrap" hidden><div class="backdrop"></div><div id="dlg" class="sheet dlg" role="alertdialog" aria-modal="true"></div></div>
+
+<script>
+'use strict';
+/* ============ storage & helpers ============ */
+const LS = { doc:'groc.doc', sync:'groc.sync', remote:'groc.remote', etag:'groc.etag', last:'groc.lastSync' };
+const FILE = 'groceries.json';
+const GIST_DESC = 'Shared grocery list (app data)';
+const TOKEN_URL = 'https://github.com/settings/tokens/new?scopes=gist&description=Grocery%20list%20app';
+const DAY = 864e5;
+const load = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
+const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+const drop = k => { try { localStorage.removeItem(k); } catch (e) {} };
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const now = () => Date.now();
+const $ = id => document.getElementById(id);
+const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+const fmtTime = t => new Date(t).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+function canon(o) {
+  if (Array.isArray(o)) return '[' + o.map(canon).join(',') + ']';
+  if (o && typeof o === 'object') return '{' + Object.keys(o).sort().filter(k => o[k] !== undefined).map(k => JSON.stringify(k) + ':' + canon(o[k])).join(',') + '}';
+  return JSON.stringify(o);
+}
+
+/* ============ headings ============ */
+const DEFAULT_CATS = [
+  ['produce','Produce','🥕',10], ['bakery','Bakery','🥖',20], ['meat','Meat & fish','🥩',30],
+  ['dairy','Dairy','🧀',40], ['dry','Dry & canned goods','🥫',50], ['drinks','Drinks','🥤',60],
+  ['frozen','Frozen','🧊',70], ['household','Household','🧻',80], ['personal','Personal care','🧴',90],
+  ['other','Other','📦',1000]
+];
+function freshDoc() { const d = { v:1, items:{}, cats:{}, learned:{}, hist:{} }; return ensureDefaults(d); }
+function ensureDefaults(d) {
+  d.items = d.items || {}; d.cats = d.cats || {}; d.learned = d.learned || {}; d.hist = d.hist || {}; d.v = 1;
+  for (const [id, name, icon, order] of DEFAULT_CATS) if (!d.cats[id]) d.cats[id] = { id, name, icon, order, t:0 };
+  return d;
+}
+
+/* ============ dictionary (Danish + English) ============
+   commas separate products, | separates names for the SAME product (used for duplicate detection) */
+const DICT = {
+personal:`shampoo|shampoos, balsam|conditioner|hårbalsam, sæbe|soap|håndsæbe|hand soap|flydende sæbe, bodywash|body wash|showergel|shower gel|brusegel|badesæbe,
+tandpasta|toothpaste, tandbørste|tandbørster|toothbrush|toothbrushes, tandtråd|floss|dental floss, tandstikker|toothpicks, mundskyl|mundvand|mouthwash,
+deodorant|deo|deodoranter, barberblade|barberskraber|razor|razors|razor blades, barberskum|barbergel|shaving foam|shaving gel|shaving cream,
+bind|hygiejnebind|sanitary pads|pads, trusseindlæg|panty liners, tamponer|tampons, bleer|ble|diapers|nappies, vådservietter|wet wipes|baby wipes|babyservietter,
+vatpinde|cotton buds|q tips|qtips, vatrondeller|cotton pads, fugtighedscreme|ansigtscreme|dagcreme|natcreme|moisturizer|moisturiser|face cream,
+håndcreme|hand cream, bodylotion|body lotion|lotion, solcreme|sunscreen|sun cream|suncream, aftersun|after sun, plaster|plastre|plasters|band aids|bandaids,
+panodil|pamol|paracetamol, ipren|ibuprofen|ibumetin, hovedpinepiller|smertestillende|painkillers|pain killers, vitaminer|vitamin|vitamins|multivitamin|vitaminpiller,
+hårelastikker|elastikker|hair ties, læbepomade|lip balm|labello, makeup|make up, mascara, hårspray|hair spray|hairspray, hårvoks|hair wax, hårgelé|hair gel,
+ansigtsrens|cleanser|face wash, makeupfjerner|makeup remover, lommetørklæder|papirlommetørklæder|tissues|kleenex, neglelak|nail polish, neglefil|nail file,
+intimsæbe, fodcreme|foot cream, hårfarve|hair dye, kondomer|condoms`,
+household:`køkkenrulle|køkkenruller|paper towels|paper towel|kitchen roll|kitchen paper, toiletpapir|toilet paper|toilet roll|toilet rolls|toiletruller|wc papir,
+skraldeposer|affaldsposer|skraldesække|trash bags|trash bag|bin bags|bin bag|garbage bags|garbage bag|bin liners, opvaskemiddel|sulfo|dish soap|washing up liquid|dishwashing liquid,
+opvasketabs|maskinopvask|dishwasher tablets|dishwasher tabs, afspændingsmiddel|rinse aid, maskinsalt|opvaskesalt|dishwasher salt,
+vaskepulver|vaskemiddel|flydende vaskemiddel|vaskekapsler|laundry detergent|detergent|washing powder|laundry pods, skyllemiddel|fabric softener,
+rengøringsmiddel|rengøringsspray|universalrengøring|cleaning spray|cleaner|all purpose cleaner|cleaning supplies, glasrens|vinduesrens|window cleaner|glass cleaner,
+wc rens|toiletrens|wc gel|toilet cleaner, klorin|bleach, kalkfjerner|antikalk|descaler, brun sæbe, grøn sæbe, gulvvask|floor cleaner,
+karklude|karklud|klude|klud|dishcloths|dishcloth|cloths, microfiberklude|microfiber cloths, opvaskesvamp|svamp|skuresvamp|grydesvamp|sponge|sponges,
+opvaskebørste|dish brush, viskestykker|viskestykke|tea towels, alufolie|sølvpapir|aluminium foil|aluminum foil|tin foil|foil,
+husholdningsfilm|plastfolie|cling film|clingfilm|plastic wrap, bagepapir|baking paper|parchment paper, fryseposer|frostposer|freezer bags,
+plastikposer|zip bags|ziplock bags|ziploc bags, sandwichposer|madposer|sandwich bags, stearinlys|lys|kronelys|candles, fyrfadslys|tealights|tea lights,
+tændstikker|matches, lighter, batterier|batteri|batteries, elpærer|lyspærer|light bulbs|light bulb, servietter|napkins, tørretumblerark|dryer sheets,
+kattegrus|kattesand|cat litter, kattemad|cat food, hundemad|dog food, godbidder|dog treats, grillkul|briketter|charcoal, tændvæske|lighter fluid,
+paptallerkener|paper plates, papkrus|paper cups, plastikbestik|plastic cutlery, kaffefiltre|kaffefilter|coffee filters, støvsugerposer|vacuum bags,
+gummihandsker|rubber gloves, papir, middel`,
+drinks:`vand|water|kildevand|still water|bottled water, danskvand|mineralvand|sparkling water|sparkling, sodavand|sodavander|soda|sodas|soft drinks,
+cola|coke|coca cola, pepsi|pepsi max, cola zero|coke zero, fanta, sprite, faxe kondi|kondi, juice|juicer, appelsinjuice|orange juice, æblejuice|apple juice,
+saft|cordial, hyldeblomstsaft|elderflower cordial, øl|beer|beers|bajere|pilsner|pils|lager, julebryg|christmas beer, ipa, alkoholfri øl|alcohol free beer,
+vin|wine, rødvin|red wine, hvidvin|white wine, rosé|rosevin|rosé wine, bobler|mousserende vin|sparkling wine, cava, prosecco, champagne, cider,
+energidrik|energidrikke|energy drink|energy drinks, red bull, monster, iste|iced tea|ice tea, smoothie|smoothies, kombucha, gin, vodka, rom|rum,
+whisky|whiskey, snaps|akvavit, likør|liqueur, tonic|tonicvand|tonic water, lemonade|limonade, ginger ale, ginger beer, kokosvand|coconut water,
+kakaomælk|chokolademælk|cocio|chocolate milk, sportsdrik|sports drink`,
+frozen:`is|isen|flødeis|ice cream, vaniljeis|vanilla ice cream, isvafler|ice cream cones, ispinde|sodavandsis|popsicles|ice lollies, sorbet,
+ærter|grønne ærter|peas|green peas, edamame|edamamebønner, frosne grøntsager|frostgrøntsager|frozen vegetables|frozen veg,
+wokgrøntsager|wok mix|stir fry vegetables, suppeurter, frosne bær|frostbær|frozen berries, pommes frites|fritter|frites|fries|french fries,
+kartoffelbåde|potato wedges|wedges, kroketter|croquettes, rösti|hash browns, pizza|pizzaer|frozen pizza, fiskepinde|fish fingers|fish sticks,
+panerede fiskefileter|breaded fish, nuggets|kyllingenuggets|chicken nuggets, forårsruller|spring rolls, dumplings|gyoza, isterninger|ice cubes|ice,
+butterdej|puff pastry, filodej|filo pastry|phyllo, frossen spinat|frozen spinach`,
+bakery:`brød|bread|loaf, rugbrød|rye bread|solsikkerugbrød, franskbrød|white bread, toastbrød|sandwichbrød|toast|sliced bread|toast bread,
+grovbrød|fuldkornsbrød|wholemeal bread|whole wheat bread, surdejsbrød|sourdough|sourdough bread, boller|bolle|grovboller|morgenboller|rolls|bread rolls|buns,
+rundstykker|rundstykke, hveder, teboller, skoleboller, burgerboller|hamburgerboller|burger buns, hotdogbrød|pølsebrød|hot dog buns|hotdog buns,
+pitabrød|pita|pitas|pita bread, tortilla|tortillas|tortillawraps|wraps|wrap, naan|naanbrød|naan bread, baguette|baguettes, flute|flutes, ciabatta, focaccia,
+croissant|croissanter|croissants, wienerbrød|danish pastry|pastries, kanelsnegl|kanelsnegle|kanelsnurrer|cinnamon rolls|cinnamon roll, tebirkes, spandauer,
+bagel|bagels, kage|kager|cake|cakes, muffins|muffin, kringle, brownies|brownie, knækbrød|crispbread|wasa, english muffins, lagkagebunde`,
+dairy:`mælk|milk, letmælk|semi skimmed milk|semi skimmed, minimælk, skummetmælk|skimmed milk|skim milk, sødmælk|whole milk, laktosefri mælk|lactose free milk,
+kærnemælk|buttermilk, havremælk|havredrik|oatly|oat milk, sojamælk|sojadrik|soy milk, mandelmælk|mandeldrik|almond milk, plantedrik|plantemælk|plant milk,
+fløde|cream, piskefløde|whipping cream|double cream|heavy cream, madlavningsfløde|cooking cream, kaffefløde|letfløde|single cream|half and half,
+creme fraiche|cremefraiche|sour cream, yoghurt|yogurt|yoghurts|yogurts, græsk yoghurt|greek yogurt|greek yoghurt, skyr, a38, ymer, ylette, tykmælk, cultura, kefir,
+koldskål, kvark|quark, smør|butter, smørbar|spreadable butter, lurpak, kærgården, margarine|plantemargarine|plantesmør, ost|oste|cheese,
+skiveost|sliced cheese, revet ost|grated cheese|shredded cheese, mozzarella, parmesan|parmigiano, feta|fetaost|salatost|feta cheese, cheddar, brie, camembert,
+gouda, danbo, havarti, blåskimmelost|blue cheese, gorgonzola, halloumi|grillost, hytteost|cottage cheese, flødeost|cream cheese|philadelphia, smøreost,
+mascarpone, ricotta, æg|egg|eggs|hønseæg|skrabeæg|frilandsæg|free range eggs, gær|yeast, pizzadej|pizza dough, tærtedej|pie crust|pie dough,
+frisk pasta|fresh pasta, gnocchi, risalamande, pudding`,
+meat:`kød|meat, oksekød|beef, hakket oksekød|oksefars|hakkekød|ground beef|minced beef|beef mince|mince, hakket svinekød|svinefars|flæskefars|pork mince|ground pork,
+hakket kylling|kyllingefars|chicken mince|ground chicken, blandet fars|grisefars, fars, svinekød|pork, flæskesteg|pork roast,
+mørbrad|svinemørbrad|pork tenderloin|tenderloin, koteletter|kotelet|nakkekoteletter|pork chops, nakkefilet, filet, kalv|kalvekød|veal,
+kylling|hel kylling|chicken|whole chicken, kyllingebryst|kyllingebrystfilet|chicken breast|chicken breasts, kyllingelår|overlår|underlår|chicken thighs|chicken legs|drumsticks,
+kyllingefilet|kyllingeinderfilet|chicken fillets|chicken tenders, kalkun|kalkunbryst|turkey, lam|lammekød|lamb, lammekølle|leg of lamb,
+bacon|baconskiver|bacon slices, bacon i tern|baconterninger|diced bacon|lardons, pølser|pølse|sausage|sausages, hotdogpølser|frankfurter|frankfurters|hot dogs,
+medister|medisterpølse, skinke|kogt skinke|ham, hamburgerryg, pålæg|cold cuts|deli meat|lunch meat, rullepølse, leverpostej|liver pate|pate,
+spegepølse|salami, pepperoni, chorizo, serranoskinke|serrano|parmaskinke|prosciutto, frikadeller|kødboller|meatballs, bøf|bøffer|steak|steaks,
+entrecote|ribeye|rib eye, culotte, roastbeef|roast beef, hamburgerbøffer|burger patties|burgers, flæsk|stegeflæsk|pork belly, ribben|spareribs|ribs,
+gullasch|goulash|stew meat, fisk|fish, laks|laksefilet|salmon|salmon fillet, røget laks|smoked salmon, torsk|torskefilet|cod, rødspætte|plaice,
+kuller|haddock, sej|saithe|pollock, hellefisk|halibut, rejer|shrimp|prawns, muslinger|mussels, fiskefrikadeller|fish cakes`,
+produce:`æble|æbler|apple|apples, pære|pærer|pear|pears, banan|bananer|banana|bananas, appelsin|appelsiner|orange|oranges, citron|citroner|lemon|lemons,
+lime|limes|limefrugt|limefrugter, mandarin|mandariner|clementin|clementiner|clementine|clementines|tangerine|tangerines, grape|grapefrugt|grapefruit,
+vindruer|druer|grapes, jordbær|strawberry|strawberries, hindbær|raspberry|raspberries, blåbær|blueberry|blueberries, brombær|blackberry|blackberries,
+kirsebær|cherry|cherries, vandmelon|watermelon, melon|meloner|honningmelon|galiamelon|cantaloupe, ananas|pineapple, mango|mangoer|mangos|mangoes,
+kiwi|kiwier|kiwis, avocado|avocadoer|avocados, fersken|ferskner|peach|peaches, nektarin|nektariner|nectarine|nectarines, blomme|blommer|plum|plums,
+granatæble|pomegranate, passionsfrugt|passion fruit, tomat|tomater|tomato|tomatoes, cherrytomater|snacktomater|cherry tomatoes,
+agurk|agurker|slangeagurk|cucumber|cucumbers, peberfrugt|peberfrugter|bell pepper|bell peppers|peppers|red pepper|green pepper|yellow pepper,
+løg|gule løg|onion|onions, rødløg|red onion|red onions, forårsløg|spring onion|spring onions|scallion|scallions|green onions, skalotteløg|shallot|shallots,
+porre|porrer|leek|leeks, hvidløg|garlic, ingefær|ginger, chili|chilier|chilipeber|chilli|chilies|chillies, kartoffel|kartofler|nye kartofler|bagekartofler|potato|potatoes,
+søde kartofler|sød kartoffel|sweet potato|sweet potatoes, gulerod|gulerødder|carrot|carrots, broccoli, blomkål|cauliflower, spidskål|pointed cabbage,
+hvidkål|kål|cabbage, grønkål|kale, rosenkål|brussels sprouts|brussel sprouts, spinat|babyspinat|spinach|baby spinach,
+salat|salathoved|hjertesalat|romainesalat|lettuce|salad|romaine, icebergsalat|iceberg|iceberg lettuce, rucola|arugula|rocket,
+squash|zucchini|courgette|courgettes, aubergine|aubergines|eggplant, champignon|champignoner|svampe|kastanjechampignon|mushroom|mushrooms|champignons,
+bladselleri|selleri|celery, knoldselleri|celeriac, asparges|asparagus, majskolbe|majskolber|corn on the cob, grønne bønner|haricots verts|green beans,
+sukkerærter|sugar snaps|sugar snap peas|sugarsnaps, rødbede|rødbeder|beetroot|beets, pastinak|pastinakker|parsnip|parsnips, persillerod|persillerødder,
+radise|radiser|radish|radishes, fennikel|fennel, persille|parsley, basilikum|basil, koriander|cilantro|coriander, dild|dill, purløg|chives, mynte|mint,
+krydderurter|herbs|fresh herbs, frugt|fruit, grøntsager|grønt|vegetables|veggies, bær|berries, spirer|bønnespirer|sprouts, rabarber|rhubarb, figner|figs`,
+dry:`pasta, spaghetti, penne, fusilli|skruer|pastaskruer, lasagneplader|lasagne sheets|lasagna sheets, makaroni|macaroni, tagliatelle,
+nudler|ægnudler|noodles, risnudler|rice noodles, ris|rice, basmatiris|basmati|basmati rice, jasminris|jasmine rice, risottoris|arborio|risotto rice, grødris,
+couscous, bulgur, quinoa, mel|hvedemel|flour|wheat flour|all purpose flour, rugmel|rye flour, fuldkornsmel|whole wheat flour, majsstivelse|maizena|cornstarch|cornflour,
+kartoffelmel|potato starch, sukker|sugar, flormelis|icing sugar|powdered sugar, brun farin|farin|brown sugar, rørsukker|cane sugar, bagepulver|baking powder,
+natron|baking soda|bicarbonate, vaniljesukker|vanilla sugar, vanilje|vaniljestang|vanilla|vanilla extract, havregryn|oats|oatmeal|rolled oats|porridge oats,
+müsli|musli|muesli, granola, cornflakes, morgenmadsprodukter|cereal|cereals|breakfast cereal, kaffe|kaffebønner|formalet kaffe|instant kaffe|nescafe|coffee|coffee beans,
+te|tebreve|tea|teabags|tea bags, grøn te|green tea, kakao|kakaopulver|cocoa|cocoa powder|cacao, honning|honey, syltetøj|marmelade|jam|marmalade, nutella,
+nøddepålæg|chocolate spread, peanutbutter|jordnøddesmør|peanut butter, pålægschokolade, olie|madolie|oil|vegetable oil, olivenolie|olive oil|extra virgin olive oil,
+rapsolie|rapeseed oil|canola oil, solsikkeolie|sunflower oil, kokosolie|coconut oil, eddike|husholdningseddike|vinegar, balsamico|balsamicoeddike|balsamic|balsamic vinegar,
+salt|havsalt|flagesalt|sea salt, peber|sort peber|peberkorn|pepper|black pepper|peppercorns, krydderier|krydderi|spices, paprika|paprikapulver|røget paprika|smoked paprika,
+karry|karrypulver|curry|curry powder, karrypasta|curry paste, kanel|cinnamon, spidskommen|cumin, oregano, timian|thyme, rosmarin|rosemary,
+laurbærblade|bay leaves, muskatnød|nutmeg, chiliflager|chilipulver|chili flakes|chili powder, cayennepeber|cayenne, gurkemeje|turmeric, garam masala,
+hvidløgspulver|garlic powder, bouillon|bouillonterninger|hønsebouillon|grøntsagsbouillon|oksebouillon|stock|stock cubes|broth, fond|kalvefond|hønsefond,
+ketchup, sennep|dijonsennep|mustard|dijon, mayonnaise|mayo, remoulade, sojasovs|soja|soy sauce|soya, sriracha, chilisauce|hot sauce|chili sauce|tabasco,
+sweet chili|sød chilisauce|sweet chilli, fiskesauce|fish sauce, østerssauce|oyster sauce, worcestershire, pesto|grøn pesto|rød pesto,
+tomatpuré|tomatkoncentrat|tomato paste|tomato puree, hakkede tomater|flåede tomater|dåsetomater|chopped tomatoes|canned tomatoes|tinned tomatoes, passata,
+soltørrede tomater|sun dried tomatoes, kokosmælk|coconut milk, bønner|beans, kidneybønner|kidney beans, kikærter|chickpeas|garbanzo beans,
+linser|røde linser|lentils|red lentils, sorte bønner|black beans, hvide bønner|white beans|cannellini, baked beans|bagte bønner, majs|corn|sweetcorn|sweet corn,
+tun|tunfisk|tun i vand|tuna, makrel|makrel i tomat|mackerel, sardiner|sardines, ansjoser|anchovies, sild|marinerede sild|herring, oliven|olives,
+pickles|syltede agurker|asier|agurkesalat, kapers|capers, nødder|nuts, mandler|almonds, cashewnødder|cashews|cashew, peanuts|jordnødder|saltede peanuts,
+valnødder|walnuts, hasselnødder|hazelnuts, pinjekerner|pine nuts, pistacienødder|pistacier|pistachios, rosiner|rosin|raisins,
+tørret frugt|tørrede abrikoser|dried fruit|dried apricots, dadler|dates, chips|kartoffelchips|crisps|potato chips, tortillachips|nachos|tortilla chips,
+popcorn|popcornmajs, snacks, kiks|biscuits|crackers, småkager|cookies|cookie, digestive|digestives, chokolade|mørk chokolade|mælkechokolade|chocolate|dark chocolate,
+slik|bolsjer|candy|sweets, vingummi|haribo|matador mix|gummies|gummy bears, lakrids|licorice|liquorice, salsa|tacosauce|taco sauce,
+tacokrydderi|taco seasoning|taco spice, tacoskaller|taco shells, suppe|dåsesuppe|soup, sauce|sovs|brun sovs|gravy,
+pastasauce|tomatsauce|bolognesesauce|pasta sauce|tomato sauce, dressing|salatdressing|salad dressing, riskiks|rice cakes, gelatine|husblas,
+kokosmel|kokos|desiccated coconut, chiafrø|chia seeds|chia, hørfrø|flaxseed|linseed, solsikkekerner|sunflower seeds, græskarkerner|pumpkin seeds,
+sesamfrø|sesame seeds, sirup|lys sirup|mørk sirup|syrup|golden syrup, ahornsirup|maple syrup, agavesirup|agave, rasp|panko|breadcrumbs|bread crumbs,
+tørgær|dry yeast, kondenseret mælk|condensed milk, marcipan|marzipan, bagechokolade|baking chocolate|chocolate chips, krymmel|sprinkles`
+};
+
+function norm(s) {
+  return String(s || '').toLowerCase().normalize('NFC')
+    .replace(/[éèêë]/g,'e').replace(/[îïí]/g,'i').replace(/[àâá]/g,'a').replace(/[ôó]/g,'o').replace(/[üú]/g,'u').replace(/ö/g,'ø').replace(/ä/g,'æ')
+    .replace(/[^\p{L}\p{N}%\s]/gu,' ').replace(/\s+/g,' ').trim();
+}
+function stems(w) {
+  const out = [w];
+  const add = s => { if (s.length >= 2 && !out.includes(s)) out.push(s); };
+  add(w.replace(/ies$/,'y')); add(w.replace(/es$/,'')); add(w.replace(/s$/,''));
+  add(w.replace(/erne$/,'')); add(w.replace(/ene$/,'e')); add(w.replace(/en$/,'')); add(w.replace(/et$/,''));
+  add(w.replace(/er$/,'e')); add(w.replace(/er$/,'')); add(w.replace(/r$/,'')); add(w.replace(/e$/,''));
+  return out;
+}
+const WORD = new Map();
+(() => {
+  let gid = 0;
+  for (const [cat, txt] of Object.entries(DICT)) for (const grp of txt.split(',')) {
+    const names = grp.split('|').map(norm).filter(Boolean);
+    if (!names.length) continue; gid++;
+    for (const n of names) if (!WORD.has(n)) WORD.set(n, { c:cat, g:gid });
+  }
+})();
+const SHORT_SUFFIX = new Set(['is','øl','æg','ost','ris','mel','lys','vin','kød','gær']);
+const singleKeys = [...WORD.keys()].filter(k => !k.includes(' '));
+const SUFFIX = singleKeys.filter(k => k.length >= 4 || SHORT_SUFFIX.has(k)).sort((a,b) => b.length - a.length);
+const PREFIX = singleKeys.filter(k => k.length >= 4).sort((a,b) => b.length - a.length);
+const FROZEN_W = new Set(['frossen','frosne','frossent','frosset','frost','frozen']);
+const CANNED_W = new Set(['dåse','dåser','canned','tinned','konserves']);
+const CAN_UNITS = /(^|\s|\d)(dåse|dåser|can|cans|tin|tins)\b/;
+
+function dictHit(n) { for (const s of stems(n)) if (WORD.has(s)) return WORD.get(s); return null; }
+
+function categorize(name, qty) {
+  const n = norm(name); if (!n) return null;
+  for (const s of stems(n)) { const L = doc.learned[s]; if (L && !L.del && catExists(L.c)) return { c:L.c, how:'learned' }; }
+  const canned = CAN_UNITS.test(norm(qty || ''));
+  const hit = dictHit(n);
+  if (hit) return { c: canned && hit.c === 'produce' ? 'dry' : hit.c, how:'dict' };
+  const words = n.split(' ');
+  if (words.some(w => FROZEN_W.has(w)) || /^(frost|frosne|frossen)/.test(n)) return { c:'frozen', how:'mod' };
+  if (canned || words.some(w => CANNED_W.has(w)) || /^dåse/.test(n)) return { c:'dry', how:'mod' };
+  for (let i = words.length - 2; i >= 0; i--) { const h = dictHit(words[i] + ' ' + words[i+1]); if (h) return { c:h.c, how:'phrase' }; }
+  for (let i = words.length - 1; i >= 0; i--) { const h = dictHit(words[i]); if (h) return { c:h.c, how:'word' }; }
+  for (let i = words.length - 1; i >= 0; i--) { const w = words[i]; if (w.length > 4 && w.endsWith('is') && dictHit(w.slice(0, -2))) return { c:'frozen', how:'ice' }; }
+  for (let i = words.length - 1; i >= 0; i--) { const w = words[i]; for (const k of SUFFIX) if (w.length > k.length && w.endsWith(k)) return { c:WORD.get(k).c, how:'suffix' }; }
+  for (let i = words.length - 1; i >= 0; i--) { const w = words[i]; for (const k of PREFIX) if (w.length > k.length && w.startsWith(k)) return { c:WORD.get(k).c, how:'prefix' }; }
+  return null;
+}
+
+/* amounts typed together with the item: "2 l mælk", "500g oksefars", "mælk x2", "æg 10 stk" */
+const UNIT = '(?:stk|styk|stykker|gram|gr|g|kilo|kg|liter|l|dl|cl|ml|pakke|pakker|pk|ps|pose|poser|bakke|bakker|dåse|dåser|glas|flaske|flasker|bundt|bdt|net|rulle|ruller|rl|pcs|pc|packs|pack|cans|can|tins|tin|jars|jar|bottles|bottle|bags|bag|boxes|box|lbs|lb|oz|x)';
+const NUM = '(?:\\d+(?:[.,]\\d+)?|½|¼|¾)';
+const LEAD = new RegExp(`^(${NUM}\\s*(?:${UNIT}\\.?)?|x\\s*\\d+)\\s+(.+)$`, 'i');
+const TRAIL = new RegExp(`^(.+?)\\s+(${NUM}\\s*(?:${UNIT}\\.?)?|x\\s*\\d+|\\d+\\s*x)$`, 'i');
+function parseEntry(text) {
+  const s = String(text || '').replace(/\s+/g, ' ').trim();
+  let m = s.match(LEAD); if (m) return { qty:m[1].trim(), name:m[2].trim() };
+  m = s.match(TRAIL); if (m) return { qty:m[2].trim(), name:m[1].trim() };
+  return { qty:'', name:s };
+}
+
+/* duplicate detection: same word (incl. plural) or same product in the other language */
+function dupKeys(name) {
+  const n = norm(name), keys = new Set();
+  for (const s of stems(n)) if (s.length >= 3) keys.add('n:' + s);
+  const h = dictHit(n); if (h) keys.add('g:' + h.g);
+  return keys;
+}
+function findDup(name, exceptId) {
+  const k = dupKeys(name);
+  const items = Object.values(doc.items).filter(i => !i.del && i.id !== exceptId).sort((a,b) => (a.done?1:0) - (b.done?1:0));
+  for (const it of items) for (const x of dupKeys(it.name)) if (k.has(x)) return it;
+  return null;
+}
+
+/* ============ document ============ */
+let doc = ensureDefaults(load(LS.doc, null) || freshDoc());
+const catExists = c => !!(doc.cats[c] && !doc.cats[c].del);
+const activeCats = () => Object.values(doc.cats).filter(c => !c.del).sort((a,b) => (a.order - b.order) || a.name.localeCompare(b.name));
+const catOf = it => catExists(it.c) ? it.c : 'other';
+const catName = c => (doc.cats[c] && !doc.cats[c].del) ? doc.cats[c].name : doc.cats.other.name;
+
+function commit() { save(LS.doc, doc); render(); scheduleSync(); }
+function bumpHist(name, c) {
+  const k = norm(name); if (!k) return;
+  const old = doc.hist[k];
+  doc.hist[k] = { name, c, n: (old && !old.del ? old.n || 0 : 0) + 1, t: now() };
+}
+function addItem(name, qty, c) {
+  const id = uid(), t = now();
+  doc.items[id] = { id, name, qty: qty || '', c, done:false, added:t, t };
+  bumpHist(name, c); commit(); return id;
+}
+function updItem(id, patch) { const it = doc.items[id]; if (!it) return; Object.assign(it, patch, { t: now() }); commit(); }
+function learn(name, c) { const k = norm(name); if (k) doc.learned[k] = { c, t: now() }; }
+function createCat(name) {
+  const id = 'c' + uid();
+  const max = Math.max(0, ...activeCats().filter(c => c.id !== 'other').map(c => c.order));
+  doc.cats[id] = { id, name: name.trim(), icon:'🏷️', order: max + 10, t: now() };
+  commit(); return id;
+}
+function moveCat(id, dir) {
+  const list = activeCats(); const i = list.findIndex(c => c.id === id); const j = i + dir;
+  if (i < 0 || j < 0 || j >= list.length) return;
+  list.splice(j, 0, list.splice(i, 1)[0]);
+  const t = now();
+  list.forEach((c, k) => { const o = (k + 1) * 10; if (c.order !== o) { c.order = o; c.t = t; } });
+  commit();
+}
+function deleteCat(id) {
+  if (id === 'other' || !doc.cats[id]) return;
+  const t = now();
+  for (const it of Object.values(doc.items)) if (it.c === id) { it.c = 'other'; it.t = t; }
+  for (const [k, v] of Object.entries(doc.learned)) if (v.c === id) doc.learned[k] = { del:true, t };
+  doc.cats[id] = { ...doc.cats[id], del:true, t };
+  commit();
+}
+
+/* merge two copies of the list: newest change per item wins, nothing is lost */
+function newer(a, b) {
+  if (!a) return b; if (!b) return a;
+  if (a.t !== b.t) return a.t > b.t ? a : b;
+  return canon(a) >= canon(b) ? a : b;
+}
+function mergeMap(A = {}, B = {}, f = newer) {
+  const out = {};
+  for (const k of new Set([...Object.keys(A), ...Object.keys(B)])) out[k] = f(A[k], B[k]);
+  return out;
+}
+function merge(a, b) {
+  const items = mergeMap(a.items, b.items), cats = mergeMap(a.cats, b.cats), learned = mergeMap(a.learned, b.learned);
+  const hist = mergeMap(a.hist, b.hist, (x, y) => { const w = newer(x, y); return (x && y && !w.del) ? { ...w, n: Math.max(x.n || 0, y.n || 0) } : w; });
+  const cutoff = now() - 60 * DAY;
+  for (const k in items) if (items[k].del && items[k].t < cutoff) delete items[k];
+  for (const k in learned) if (learned[k].del && learned[k].t < cutoff) delete learned[k];
+  return ensureDefaults({ v:1, items, cats, learned, hist });
+}
+
+/* ============ sync via secret GitHub Gist ============ */
+let sync = load(LS.sync, null);
+let remoteDoc = load(LS.remote, null);
+let etag = load(LS.etag, null);
+let lastSync = load(LS.last, null);
+let syncState = 'idle', syncMsg = '', inFlight = false, again = false, syncTimer = null, pauseUntil = 0;
+
+function httpErr(r) { const e = new Error('HTTP ' + r.status); e.status = r.status; return e; }
+function gh(path, opts = {}, token) {
+  const headers = { 'Accept':'application/vnd.github+json', 'Authorization':'Bearer ' + (token || sync.token), ...(opts.headers || {}) };
+  return fetch('https://api.github.com' + path, { ...opts, headers, cache:'no-store' });
+}
+function scheduleSync() { if (!sync) return; clearTimeout(syncTimer); syncTimer = setTimeout(() => syncNow(), 600); renderStatus(); }
+const pending = () => !remoteDoc || canon(doc) !== canon(remoteDoc);
+
+async function syncNow(force) {
+  if (!sync) return;
+  if (!force && now() < pauseUntil) return;
+  if (inFlight) { again = true; return; }
+  inFlight = true; again = false;
+  if (pending()) { syncState = 'syncing'; renderStatus(); }
+  try {
+    const r = await gh('/gists/' + sync.gist, { headers: (etag && remoteDoc) ? { 'If-None-Match': etag } : {} });
+    let remote;
+    if (r.status === 304) remote = remoteDoc;
+    else if (r.ok) {
+      const j = await r.json();
+      const f = j.files && j.files[FILE];
+      if (!f) { const e = new Error('nofile'); e.status = 404; throw e; }
+      let content = f.content;
+      if (f.truncated) content = await (await fetch(f.raw_url, { cache:'no-store' })).text();
+      remote = content && content.trim() ? JSON.parse(content) : freshDoc();
+      remoteDoc = remote; etag = r.headers.get('ETag');
+      save(LS.remote, remoteDoc); save(LS.etag, etag);
+    } else throw httpErr(r);
+
+    const merged = merge(doc, remote);
+    if (canon(merged) !== canon(doc)) { doc = merged; save(LS.doc, doc); render(); }
+    if (canon(doc) !== canon(remote)) {
+      const content = canon(doc);
+      const p = await gh('/gists/' + sync.gist, { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ files:{ [FILE]:{ content } } }) });
+      if (!p.ok) throw httpErr(p);
+      remoteDoc = JSON.parse(content); etag = null;
+      save(LS.remote, remoteDoc); drop(LS.etag);
+    }
+    syncState = 'ok'; syncMsg = ''; lastSync = now(); save(LS.last, lastSync);
+  } catch (e) {
+    if (!e.status) { syncState = 'offline'; pauseUntil = now() + 8000; }
+    else if (e.status === 401) { syncState = 'error'; syncMsg = 'GitHub didn’t accept the token'; pauseUntil = now() + 60000; }
+    else if (e.status === 404) { syncState = 'error'; syncMsg = 'the shared list wasn’t found'; pauseUntil = now() + 60000; }
+    else if (e.status === 403 || e.status === 429) { syncState = 'error'; syncMsg = 'GitHub is busy – retrying soon'; pauseUntil = now() + 60000; }
+    else { syncState = 'error'; syncMsg = 'GitHub error ' + e.status; pauseUntil = now() + 20000; }
+  } finally {
+    inFlight = false; renderStatus();
+    if (again) setTimeout(() => syncNow(), 50);
+  }
+}
+
+async function connectWithToken(token) {
+  let found = null;
+  for (let page = 1; page <= 5 && !found; page++) {
+    const r = await gh('/gists?per_page=100&page=' + page, {}, token);
+    if (!r.ok) throw httpErr(r);
+    const list = await r.json();
+    found = list.find(g => g.files && g.files[FILE] && g.description === GIST_DESC) || null;
+    if (list.length < 100) break;
+  }
+  if (!found) {
+    const r = await gh('/gists', { method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ description: GIST_DESC, public:false, files:{ [FILE]:{ content: canon(doc) } } }) }, token);
+    if (!r.ok) throw httpErr(r);
+    found = await r.json();
+  }
+  setSync({ token, gist: found.id });
+  await syncNow(true);
+}
+function setSync(s) {
+  sync = s; remoteDoc = null; etag = null; pauseUntil = 0; syncState = 'idle';
+  if (s) save(LS.sync, s); else { drop(LS.sync); drop(LS.last); lastSync = null; }
+  drop(LS.remote); drop(LS.etag);
+}
+const b64e = s => btoa(unescape(encodeURIComponent(s))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const b64d = s => decodeURIComponent(escape(atob(s.replace(/-/g,'+').replace(/_/g,'/'))));
+const joinLink = () => location.origin + location.pathname + '#join=' + b64e(JSON.stringify({ t: sync.token, g: sync.gist }));
+function joinFrom(text) {
+  const m = String(text || '').match(/#join=([A-Za-z0-9_\-]+)/); if (!m) return false;
+  try { const o = JSON.parse(b64d(m[1])); if (!o.t || !o.g) return false; setSync({ token:o.t, gist:o.g }); syncNow(true); return true; }
+  catch (e) { return false; }
+}
+
+/* ============ rendering ============ */
+const listEl = $('list'), statusEl = $('status');
+let swipe = null, renderPending = false, flashId = null;
+
+function statusText() {
+  if (!sync) return 'Only on this device · tap to set up sharing';
+  if (syncState === 'syncing') return 'Syncing…';
+  if (syncState === 'offline') return 'Offline · changes are saved here and sync later';
+  if (syncState === 'error') return 'Sync problem: ' + syncMsg + ' · tap for settings';
+  if (!lastSync) return 'Connecting…';
+  return (pending() ? 'Saving… · last synced ' : 'Synced ') + fmtTime(lastSync);
+}
+function renderStatus() { statusEl.textContent = statusText(); statusEl.classList.toggle('err', syncState === 'error'); }
+
+function rowHtml(i) {
+  return `<li class="item${i.done ? ' done' : ''}${i.id === flashId ? ' flash' : ''}" data-id="${i.id}" tabindex="0">` +
+    `<div class="swipe-bg" aria-hidden="true">${i.done ? '↺ Back on the list' : '✓ Got it'}</div>` +
+    `<div class="row"><span class="nm">${esc(i.name)}</span>${i.qty ? `<span class="qty">${esc(i.qty)}</span>` : ''}</div></li>`;
+}
+function render() {
+  if (swipe) { renderPending = true; return; }
+  renderPending = false;
+  const items = Object.values(doc.items).filter(i => !i.del);
+  const open = items.filter(i => !i.done);
+  const done = items.filter(i => i.done).sort((a,b) => (b.doneAt || 0) - (a.doneAt || 0));
+  let h = '';
+  if (!items.length) h = `<div class="empty"><b>🛒</b>The list is empty.<br>Add something above – in Danish or English.</div>`;
+  else if (!open.length) h = `<div class="empty"><b>🎉</b>Everything is crossed off.</div>`;
+  for (const c of activeCats()) {
+    const its = open.filter(i => catOf(i) === c.id).sort((a,b) => a.added - b.added);
+    if (!its.length) continue;
+    h += `<section class="cat"><h2><span class="ic">${esc(c.icon || '🏷️')}</span>${esc(c.name)}<span class="cnt">${its.length}</span></h2><ul>${its.map(rowHtml).join('')}</ul></section>`;
+  }
+  if (done.length) h += `<section class="cat done-sec"><h2><span class="ic">✓</span>Crossed off<span class="cnt">${done.length}</span></h2><ul>${done.map(rowHtml).join('')}</ul>` +
+    `<button class="btn danger wide" data-act="clearDone">Delete all crossed-out items</button></section>`;
+  if (items.length) h += `<p class="hint">Swipe right to cross off · tap to edit</p>`;
+  listEl.innerHTML = h;
+  renderStatus();
+}
+function flash(id) {
+  flashId = id; render();
+  const el = listEl.querySelector(`[data-id="${id}"]`);
+  if (el) el.scrollIntoView({ block:'center', behavior:'smooth' });
+  setTimeout(() => { if (flashId === id) flashId = null; }, 1400);
+}
+
+/* ============ toast ============ */
+const toastEl = $('toast'); let toastTimer = null, toastFn = null;
+function toast(msg, action, fn) {
+  toastEl.innerHTML = `<span>${esc(msg)}</span>${action ? `<button type="button">${esc(action)}</button>` : ''}`;
+  toastFn = fn || null; toastEl.hidden = false;
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { toastEl.hidden = true; toastFn = null; }, action ? 5000 : 2600);
+}
+toastEl.addEventListener('click', e => {
+  if (!e.target.closest('button')) return;
+  const f = toastFn; toastEl.hidden = true; toastFn = null; clearTimeout(toastTimer); if (f) f();
+});
+
+/* ============ sheets & dialogs ============ */
+const sheetWrap = $('sheetWrap'), sheetEl = $('sheet'), dlgWrap = $('dlgWrap'), dlgEl = $('dlg');
+let sheetCfg = null;
+function openSheet(cfg) {
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  sheetCfg = cfg; sheetEl.innerHTML = cfg.html; sheetWrap.hidden = false; sheetEl.scrollTop = 0;
+}
+function closeSheet(dismissed) {
+  const c = sheetCfg; sheetCfg = null; sheetWrap.hidden = true; sheetEl.innerHTML = '';
+  if (dismissed && c && c.dismiss) c.dismiss();
+}
+sheetWrap.querySelector('.backdrop').addEventListener('click', () => closeSheet(true));
+sheetEl.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b || !sheetCfg) return;
+  if (b.dataset.act === 'close') return closeSheet(true);
+  if (sheetCfg.act) sheetCfg.act(b.dataset.act, b, e);
+});
+sheetEl.addEventListener('change', e => { if (sheetCfg && sheetCfg.change) sheetCfg.change(e); });
+sheetEl.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('input') && sheetCfg && sheetCfg.enter) { e.preventDefault(); sheetCfg.enter(e.target); } });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (!dlgWrap.hidden) closeDlg(); else if (!sheetWrap.hidden) closeSheet(true);
+});
+let dlgFn = null;
+function confirmDlg(msg, okLabel, fn, danger = true) {
+  dlgFn = fn;
+  dlgEl.innerHTML = `<p>${esc(msg)}</p><div class="btnrow spread"><button class="btn" data-d="no">Cancel</button><button class="btn ${danger ? 'danger' : 'primary'}" data-d="yes">${esc(okLabel)}</button></div>`;
+  dlgWrap.hidden = false;
+}
+function closeDlg() { dlgWrap.hidden = true; dlgEl.innerHTML = ''; dlgFn = null; }
+dlgWrap.querySelector('.backdrop').addEventListener('click', closeDlg);
+dlgEl.addEventListener('click', e => {
+  const b = e.target.closest('[data-d]'); if (!b) return;
+  const f = dlgFn; closeDlg(); if (b.dataset.d === 'yes' && f) f();
+});
+
+function chipsHtml(sel) {
+  return activeCats().map(c => `<button type="button" class="chip${c.id === sel ? ' on' : ''}" data-act="pick" data-cid="${c.id}">${esc(c.icon || '🏷️')} ${esc(c.name)}</button>`).join('') +
+    `<button type="button" class="chip add" data-act="newcat">＋ New heading</button>`;
+}
+const newCatBox = `<div class="newcat" id="newCatBox" hidden><input id="newCatName" placeholder="Name of the new heading" autocapitalize="sentences"><button class="btn primary" type="button" data-act="mkcat">Add</button></div>`;
+
+/* ask where an unknown item goes */
+function askCategory(name, qty) {
+  let done = false;
+  const finish = (c, remember) => {
+    if (done) return; done = true;
+    if (remember) learn(name, c);
+    const id = addItem(name, qty, c); closeSheet(false); flash(id); $('addName').focus();
+  };
+  openSheet({
+    html: `<div class="sheet-h"><h3>Where does “${esc(name)}” go?</h3><button class="icon-btn" data-act="close" aria-label="Close">✕</button></div>
+      <p class="small muted">The app will remember your choice next time.</p>
+      <div class="chips" id="chips">${chipsHtml(null)}</div>${newCatBox}`,
+    act(a, el) {
+      if (a === 'pick') finish(el.dataset.cid, true);
+      else if (a === 'newcat') { $('newCatBox').hidden = false; $('newCatName').focus(); }
+      else if (a === 'mkcat') { const v = $('newCatName').value.trim(); if (v) finish(createCat(v), true); }
+    },
+    enter(inp) { if (inp.id === 'newCatName') { const v = inp.value.trim(); if (v) finish(createCat(v), true); } },
+    dismiss() { finish('other', false); }
+  });
+}
+
+/* edit an item */
+function openEdit(id) {
+  const it = doc.items[id]; if (!it || it.del) return;
+  let sel = catOf(it), touched = false;
+  const doSave = () => {
+    const cur = doc.items[id]; if (!cur || cur.del) return closeSheet(false);
+    const name = cap($('eName').value.trim()); const qty = $('eQty').value.trim();
+    if (!name) { $('eName').focus(); return; }
+    const renamed = norm(name) !== norm(cur.name);
+    let c = sel;
+    if (renamed && !touched) { const r = categorize(name, qty); if (r) c = r.c; }
+    if (touched) learn(name, c);
+    if (renamed) {
+      const ok = norm(cur.name), h = doc.hist[ok];
+      if (h && !h.del && (h.n || 0) <= 1) doc.hist[ok] = { del:true, t:now() };
+      bumpHist(name, c);
+    }
+    closeSheet(false);
+    updItem(id, { name, qty, c });
+  };
+  const addNewCat = () => { const v = $('newCatName').value.trim(); if (!v) return; sel = createCat(v); touched = true; $('chips').innerHTML = chipsHtml(sel); $('newCatBox').hidden = true; };
+  openSheet({
+    html: `<div class="sheet-h"><h3>Edit</h3><button class="icon-btn" data-act="close" aria-label="Close">✕</button></div>
+      <div class="two"><label class="field grow"><span>Item</span><input id="eName" value="${esc(it.name)}" autocapitalize="sentences" autocorrect="off" spellcheck="false"></label>
+      <label class="field qtyf"><span>Amount</span><input id="eQty" value="${esc(it.qty || '')}" placeholder="optional" autocorrect="off"></label></div>
+      <div class="field"><span>Heading</span><div class="chips" id="chips">${chipsHtml(sel)}</div></div>${newCatBox}
+      <div class="btnrow spread"><button class="btn ghost danger-t" type="button" data-act="delete">Delete</button><button class="btn primary" type="button" data-act="save">Save</button></div>`,
+    act(a, el) {
+      if (a === 'pick') { sel = el.dataset.cid; touched = true; sheetEl.querySelectorAll('.chip[data-cid]').forEach(ch => ch.classList.toggle('on', ch.dataset.cid === sel)); }
+      else if (a === 'newcat') { $('newCatBox').hidden = false; $('newCatName').focus(); }
+      else if (a === 'mkcat') addNewCat();
+      else if (a === 'save') doSave();
+      else if (a === 'delete') {
+        const cur = doc.items[id]; closeSheet(false); if (!cur) return;
+        updItem(id, { del:true });
+        toast(`Deleted ${cur.name}`, 'Undo', () => updItem(id, { del:false }));
+      }
+    },
+    enter(inp) { if (inp.id === 'newCatName') addNewCat(); else doSave(); }
+  });
+}
+
+/* settings */
+let learnedOpen = false;
+function settingsHtml() {
+  let s = `<div class="sheet-h"><h3>Settings</h3><button class="icon-btn" data-act="close" aria-label="Close">✕</button></div>`;
+  s += `<section class="card"><div class="sec-h">Sharing &amp; sync</div>`;
+  if (!sync) {
+    s += `<p class="small">Sync keeps the list the same on both phones. The list is stored as a secret Gist on your GitHub account.</p>
+      <ol class="small steps"><li><a href="${TOKEN_URL}" target="_blank" rel="noopener">Create a token on GitHub ›</a> – only <b>gist</b> ticked, expiration <b>No expiration</b>.</li><li>Paste it below and tap Connect.</li></ol>
+      <label class="field"><span>GitHub token</span><input id="tokIn" placeholder="ghp_…" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+      <button class="btn primary" type="button" data-act="connect">Connect</button>
+      <div class="or">– or –</div>
+      <label class="field"><span>Got a setup link? Paste it here</span><input id="linkIn" placeholder="https://…#join=…" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+      <button class="btn" type="button" data-act="join">Connect with link</button>`;
+  } else {
+    s += `<p class="small">${esc(statusText())}</p><div class="btnrow"><button class="btn" type="button" data-act="syncnow">Sync now</button></div>
+      <div class="sub-h">Connect another phone or laptop</div>
+      <p class="small">Send this link to the other device. No GitHub account is needed there.<br><b>iPhone:</b> add the app to the home screen first, open it from the icon, then paste the link under ⚙︎.</p>
+      <div class="btnrow">${navigator.share ? `<button class="btn primary" type="button" data-act="share">Send link…</button>` : ''}<button class="btn" type="button" data-act="copy">Copy link</button></div>
+      <p class="small muted">The link contains your token, so only share it between the two of you.</p>
+      <div class="btnrow"><button class="btn ghost danger-t" type="button" data-act="disconnect">Disconnect this device</button></div>`;
+  }
+  s += `</section><section class="card"><div class="sec-h">Headings</div><p class="small muted">Use ↑ ↓ to put them in the order you walk through the shop. Tap a name or icon to change it.</p>`;
+  for (const c of activeCats()) s += `<div class="hrow" data-cid="${c.id}"><input class="hicon" value="${esc(c.icon || '')}" aria-label="Icon"><input class="hname" value="${esc(c.name)}" aria-label="Heading name">` +
+    `<button class="mini" type="button" data-act="up" aria-label="Move up">↑</button><button class="mini" type="button" data-act="down" aria-label="Move down">↓</button>` +
+    (c.id === 'other' ? `<span class="mini-sp"></span>` : `<button class="mini danger-t" type="button" data-act="delcat" aria-label="Delete heading">✕</button>`) + `</div>`;
+  s += `<div class="hrow"><input id="newCatIn" class="hname" placeholder="New heading" autocapitalize="sentences"><button class="btn" type="button" data-act="addcat">Add</button></div></section>`;
+  const learned = Object.entries(doc.learned).filter(([, v]) => !v.del && catExists(v.c)).sort((a,b) => a[0].localeCompare(b[0], 'da'));
+  s += `<section class="card"><details id="learnedDet"${learnedOpen ? ' open' : ''}><summary class="sec-h">Words the app has learned (${learned.length})</summary>` +
+    (learned.length ? learned.map(([k, v]) => `<div class="lrow" data-k="${esc(k)}"><span>${esc(k)}</span><span class="muted">${esc(catName(v.c))}</span><button class="mini" type="button" data-act="forget" aria-label="Forget">✕</button></div>`).join('')
+      : `<p class="small muted">When you put an item under a different heading, the app remembers it and lists it here.</p>`) + `</details></section>`;
+  return s;
+}
+function refreshSettings() {
+  if (!sheetCfg || sheetCfg.kind !== 'settings') return;
+  const det = $('learnedDet'); if (det) learnedOpen = det.open;
+  const top = sheetEl.scrollTop; sheetEl.innerHTML = settingsHtml(); sheetEl.scrollTop = top;
+}
+async function copyText(t) {
+  try { await navigator.clipboard.writeText(t); return true; }
+  catch (e) { const ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand('copy'); } catch (_) {} ta.remove(); return ok; }
+}
+function openSettings() {
+  openSheet({
+    kind:'settings', html: settingsHtml(),
+    async act(a, el) {
+      const cid = el.closest('[data-cid]') && el.closest('[data-cid]').dataset.cid;
+      if (a === 'connect') {
+        const tok = $('tokIn').value.trim(); if (!tok) { $('tokIn').focus(); return; }
+        el.disabled = true; el.textContent = 'Connecting…';
+        try { await connectWithToken(tok); toast('Connected – the list now syncs'); }
+        catch (e) { toast(e.status === 401 ? 'GitHub didn’t accept that token' : e.status ? 'GitHub error ' + e.status + ' – check the token has “gist” ticked' : 'No connection – try again'); }
+        refreshSettings();
+      } else if (a === 'join') {
+        if (joinFrom($('linkIn').value)) { toast('Connected to the shared list'); refreshSettings(); } else toast('That doesn’t look like a setup link');
+      } else if (a === 'syncnow') { await syncNow(true); refreshSettings(); }
+      else if (a === 'share') { try { await navigator.share({ title:'Grocery list', text:'Open this to connect to our shared grocery list', url: joinLink() }); } catch (e) {} }
+      else if (a === 'copy') toast(await copyText(joinLink()) ? 'Link copied' : 'Couldn’t copy the link');
+      else if (a === 'disconnect') confirmDlg('Disconnect this device? The list stays here but stops syncing.', 'Disconnect', () => { setSync(null); renderStatus(); refreshSettings(); });
+      else if (a === 'up' || a === 'down') { moveCat(cid, a === 'up' ? -1 : 1); refreshSettings(); }
+      else if (a === 'delcat') confirmDlg(`Delete the heading “${doc.cats[cid].name}”? Its items move to ${doc.cats.other.name}.`, 'Delete', () => { deleteCat(cid); refreshSettings(); });
+      else if (a === 'addcat') { const v = $('newCatIn').value.trim(); if (v) { createCat(v); refreshSettings(); } }
+      else if (a === 'forget') { const k = el.closest('[data-k]').dataset.k; doc.learned[k] = { del:true, t:now() }; learnedOpen = true; commit(); refreshSettings(); }
+    },
+    change(e) {
+      const row = e.target.closest('[data-cid]'); if (!row) return;
+      const c = doc.cats[row.dataset.cid]; if (!c) return;
+      const v = e.target.value.trim();
+      if (e.target.classList.contains('hname') && v && v !== c.name) { c.name = v; c.t = now(); commit(); }
+      if (e.target.classList.contains('hicon') && v !== (c.icon || '')) { c.icon = v; c.t = now(); commit(); }
+    },
+    enter(inp) {
+      if (inp.id === 'newCatIn') { const v = inp.value.trim(); if (v) { createCat(v); refreshSettings(); } }
+      else if (inp.id === 'tokIn') sheetEl.querySelector('[data-act="connect"]').click();
+      else if (inp.id === 'linkIn') sheetEl.querySelector('[data-act="join"]').click();
+      else inp.blur();
+    }
+  });
+}
+
+/* ============ adding items ============ */
+const addName = $('addName'), addQty = $('addQty'), suggestEl = $('suggest');
+function submitEntry(raw, qExplicit) {
+  let { name, qty } = parseEntry(raw);
+  if (qExplicit) qty = qExplicit;
+  if (!name) return;
+  name = cap(name);
+  addName.value = ''; addQty.value = ''; hideSuggest();
+  const dup = findDup(name);
+  if (dup) {
+    if (dup.done) { updItem(dup.id, { done:false, doneAt:null, ...(qty ? { qty } : {}) }); bumpHist(dup.name, catOf(dup)); flash(dup.id); toast(`${dup.name} is back on the list`); }
+    else { flash(dup.id); toast(`${dup.name} is already on the list`, 'Add anyway', () => proceedAdd(name, qty)); }
+    return;
+  }
+  proceedAdd(name, qty);
+}
+function proceedAdd(name, qty) {
+  const r = categorize(name, qty);
+  if (!r) return askCategory(name, qty);
+  const id = addItem(name, qty, r.c); flash(id);
+  toast(`${name} → ${catName(r.c)}`, 'Change', () => openEdit(id));
+}
+$('addForm').addEventListener('submit', e => { e.preventDefault(); submitEntry(addName.value, addQty.value.trim()); if (sheetWrap.hidden) addName.focus(); });
+addQty.addEventListener('focus', hideSuggest);
+
+function hideSuggest() { suggestEl.hidden = true; suggestEl.innerHTML = ''; }
+function updateSuggest() {
+  const q = norm(parseEntry(addName.value).name);
+  if (!q) return hideSuggest();
+  const onList = new Set(Object.values(doc.items).filter(i => !i.del && !i.done).map(i => norm(i.name)));
+  const list = Object.entries(doc.hist)
+    .filter(([k, h]) => !h.del && k !== q && (k.startsWith(q) || k.includes(' ' + q)))
+    .sort((a, b) => (b[1].n - a[1].n) || (b[1].t - a[1].t)).slice(0, 5);
+  if (!list.length) return hideSuggest();
+  suggestEl.innerHTML = list.map(([k, h]) => `<button type="button" data-name="${esc(h.name)}">${esc((doc.cats[h.c] && doc.cats[h.c].icon) || '🏷️')} ${esc(h.name)}${onList.has(k) ? '<span class="tag">on the list</span>' : ''}</button>`).join('');
+  suggestEl.hidden = false;
+}
+addName.addEventListener('input', updateSuggest);
+addName.addEventListener('blur', () => setTimeout(hideSuggest, 150));
+suggestEl.addEventListener('pointerdown', e => e.preventDefault());
+suggestEl.addEventListener('click', e => {
+  const b = e.target.closest('button[data-name]'); if (!b) return;
+  const typed = parseEntry(addName.value).qty;
+  submitEntry(b.dataset.name, addQty.value.trim() || typed); if (sheetWrap.hidden) addName.focus();
+});
+
+/* ============ list interaction: swipe right = cross off, tap = edit ============ */
+function toggleDone(id) {
+  const it = doc.items[id]; if (!it || it.del) return;
+  const done = !it.done;
+  updItem(id, { done, doneAt: done ? now() : null });
+  if (done) toast(`Crossed off ${it.name}`, 'Undo', () => updItem(id, { done:false, doneAt:null }));
+}
+function tapItem(id) { const it = doc.items[id]; if (!it) return; if (it.done) toggleDone(id); else openEdit(id); }
+const swipeLimit = li => Math.min(110, li.offsetWidth * 0.3);
+function snapBack(s) { s.row.style.transform = ''; s.li.classList.remove('swiping', 'armed'); }
+
+listEl.addEventListener('pointerdown', e => {
+  const li = e.target.closest('.item'); if (!li || e.button > 0 || swipe) return;
+  swipe = { li, id: li.dataset.id, row: li.querySelector('.row'), x: e.clientX, y: e.clientY, dx: 0, mode: null, pid: e.pointerId };
+});
+listEl.addEventListener('pointermove', e => {
+  const s = swipe; if (!s || e.pointerId !== s.pid) return;
+  const dx = e.clientX - s.x, dy = e.clientY - s.y;
+  if (!s.mode && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+    if (dx > 0 && Math.abs(dx) > Math.abs(dy) * 1.2) { s.mode = 'swipe'; s.li.classList.add('swiping'); try { s.li.setPointerCapture(e.pointerId); } catch (_) {} }
+    else s.mode = 'other';
+  }
+  if (s.mode === 'swipe') {
+    s.dx = Math.max(0, dx);
+    s.row.style.transform = `translateX(${s.dx}px)`;
+    s.li.classList.toggle('armed', s.dx > swipeLimit(s.li));
+    e.preventDefault();
+  }
+});
+listEl.addEventListener('pointerup', e => {
+  const s = swipe; if (!s || e.pointerId !== s.pid) return;
+  swipe = null;
+  if (s.mode === 'swipe') {
+    if (s.dx > swipeLimit(s.li)) {
+      s.li.classList.remove('swiping');
+      s.row.style.transform = `translateX(${s.li.offsetWidth}px)`;
+      setTimeout(() => toggleDone(s.id), 170);
+      return;
+    }
+    snapBack(s);
+  } else if (!s.mode) tapItem(s.id);
+  if (renderPending) render();
+});
+window.addEventListener('pointerup', e => { const s = swipe; if (!s || e.pointerId !== s.pid) return; swipe = null; if (s.mode === 'swipe') snapBack(s); if (renderPending) render(); });
+listEl.addEventListener('pointercancel', () => { const s = swipe; swipe = null; if (s && s.mode === 'swipe') snapBack(s); if (renderPending) render(); });
+listEl.addEventListener('keydown', e => {
+  const li = e.target.closest('.item'); if (!li) return;
+  if (e.key === 'Enter') { e.preventDefault(); tapItem(li.dataset.id); }
+  else if (e.key === ' ' || e.key === 'ArrowRight') { e.preventDefault(); toggleDone(li.dataset.id); }
+});
+listEl.addEventListener('click', e => {
+  if (!e.target.closest('[data-act="clearDone"]')) return;
+  const done = Object.values(doc.items).filter(i => !i.del && i.done);
+  if (!done.length) return;
+  confirmDlg(`Delete ${done.length} crossed-out item${done.length > 1 ? 's' : ''}?`, 'Delete', () => {
+    const t = now(), ids = done.map(i => i.id);
+    for (const id of ids) Object.assign(doc.items[id], { del:true, t });
+    commit();
+    toast(`Deleted ${ids.length} item${ids.length > 1 ? 's' : ''}`, 'Undo', () => { const t2 = now(); for (const id of ids) if (doc.items[id]) Object.assign(doc.items[id], { del:false, t:t2 }); commit(); });
+  });
+});
+
+$('gear').addEventListener('click', openSettings);
+statusEl.addEventListener('click', () => { if (!sync || syncState === 'error') openSettings(); else syncNow(true); });
+
+/* ============ start ============ */
+if (location.hash.startsWith('#join=')) {
+  if (joinFrom(location.hash)) toast('Connected to the shared list');
+  history.replaceState(null, '', location.pathname + location.search);
+}
+render();
+if (sync) syncNow(true);
+setInterval(() => { if (sync && document.visibilityState === 'visible' && navigator.onLine !== false) syncNow(); }, 4000);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && sync) syncNow(true); });
+window.addEventListener('online', () => { if (sync) syncNow(true); });
+window.addEventListener('pageshow', () => { if (sync) syncNow(true); });
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+window.__app = { categorize, parseEntry, merge, findDup, norm, get doc() { return doc; } };
+</script>
+</body>
+</html>
